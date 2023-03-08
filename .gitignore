@@ -1,5 +1,5 @@
-data/css/*
-data/html/*
-data/js/*
+/data/css/*
+/data/html/*
+/data/js/*
 
-data/view/*
+/data/view/*
