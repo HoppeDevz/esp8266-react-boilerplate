@@ -3,11 +3,8 @@
 #include "ESPAsyncTCP.h"
 #include "FS.h"
 
-byte SECURITY_SYSTEM_STATUS = 0;
-String SECURITY_SYSTEM_PASSWORD = "guga@123";
-
-const String ssid = "Deposito do Taquinho";
-const String password = "guga@123";
+const String ssid = "YOUR_SSID";
+const String password = "YOUR_PASSWORD";
 
 // Set your Static IP address
 IPAddress local_IP(192, 168, 0, 80);
@@ -20,12 +17,7 @@ IPAddress secondaryDNS(8, 8, 4, 4); //optional
 AsyncWebServer server(30120);
 AsyncWebSocket ws("/ws");
 
-String __HTML__ = "<p>SECURITY_SYSTEM_LOAD_LODADED_YET<p/>";
-String __CSS__ = "";
-String __JS__ = "";
-
 // Prototypes
-void readEssentialFiles();
 void connectToWifiHandle();
 void createAPIRoutes();
 
@@ -53,6 +45,13 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  // Initialize SPIFFS
+  if(!SPIFFS.begin()){
+    
+    Serial.println("SPIFFS Mount Failed");
+    return;
+  }
+
   Serial.println("1 - Connecting to WiFi...");
   connectToWifiHandle();
 
@@ -72,23 +71,6 @@ void setup() {
   server.addHandler(&ws);
   
   server.serveStatic("/", SPIFFS, "/view/").setDefaultFile("index.html");
-  server.serveStatic("/static", SPIFFS, "/view");
-  server.serveStatic("/static/css", SPIFFS, "/view");
-  server.serveStatic("/static/js", SPIFFS, "/view");
-
-  File testFile1 = SPIFFS.open("/view/main.982c5d44.js", "r");
-  if (!testFile1) {
-
-    Serial.println("Falha ao abrir o arquivo (/view/main.982c5d44.js)");
-    return;
-  }
-
-  File testFile2 = SPIFFS.open("/view/main.90ecee4d.css", "r");
-  if (!testFile2) {
-
-    Serial.println("Falha ao abrir o arquivo (/view/main.90ecee4d.css)");
-    return;
-  }
   
   server.begin();
 }
@@ -98,49 +80,16 @@ String parseSecSystemStatus() {
   if (SECURITY_SYSTEM_STATUS == 1) {
 
     return "Enabled";
+
   } else {
+
     return "Disabled";
   }
 }
 
-void handleRoot(AsyncWebServerRequest *request) {
-  
-  request->send(200, "text/html", __HTML__);
-}
-void handleCssFile(AsyncWebServerRequest *request) {
-
-  request->send(200, "text/css", __CSS__);
-}
-void handleJsFile(AsyncWebServerRequest *request) {
-
-  request->send(200, "text/js", __JS__);
-}
-void handleGetSecSystemStatus(AsyncWebServerRequest *request) {
-
-  request->send(200, "text/plain;charset=UTF-8", parseSecSystemStatus());
-}
-void handleEnableSecSystem(AsyncWebServerRequest *request) {
-
-  SECURITY_SYSTEM_STATUS = 1;
-  ws.textAll("Enabled");
-  request->send(200, "text/plain;charset=UTF-8", "OK");
-}
-void handleDisableSecSystem(AsyncWebServerRequest *request) {
-
-  SECURITY_SYSTEM_STATUS = 0;
-  ws.textAll("Disabled");
-  request->send(200, "text/plain;charset=UTF-8", "OK");
-}
-
 void createAPIRoutes() {
-  
-   // server.on("/", HTTP_GET, handleRoot);
-   // server.on("/data/css/index.min.css", HTTP_GET, handleCssFile);
-   // server.on("/data/js/index.min.js", HTTP_GET, handleJsFile);
 
-   server.on("/api/get-sec-system-status", HTTP_GET, handleGetSecSystemStatus);
-   server.on("/api/enable-security-system", HTTP_POST, handleEnableSecSystem);
-   server.on("/api/disable-security-system", HTTP_POST, handleDisableSecSystem);
+  // server.on("/api/test", HTTP_GET, handleTest);
 }
 
 void connectToWifiHandle() {
@@ -164,40 +113,6 @@ void connectToWifiHandle() {
   Serial.println("WiFi connected. (" + ssid + ")");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-}
-
-void readEssentialFiles() {
-  
-  // Read Server Files
-  SPIFFS.begin();
-  
-  File htmlFile = SPIFFS.open("/html/index.min.html", "r");
-  File cssFile = SPIFFS.open("/css/index.min.css", "r");
-  File jsFile = SPIFFS.open("/js/index.min.js", "r");
-  
-  if (!htmlFile) {
-    
-    Serial.println("Falha ao abrir o arquivo (/html/index.min.html)");
-    return;
-  }
-  if (!cssFile) {
-
-    Serial.println("Falha ao abrir o arquivo (/css/index.min.css)");
-    return;
-  }
-  if (!jsFile) {
-
-    Serial.println("Falha ao abrir o arquivo (/js/index.min.js)");
-    return;
-  }
-  
-  __HTML__ = htmlFile.readString();
-  __CSS__ = cssFile.readString();
-  __JS__ = jsFile.readString();
-
-  htmlFile.close();
-  cssFile.close();
-  jsFile.close();
 }
 
 void loop() {
